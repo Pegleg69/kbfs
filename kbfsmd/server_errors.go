@@ -54,6 +54,12 @@ const (
 	// write to be contingent on is not held at the time server tries to commit
 	// the MD, and as a result the MD is not written.
 	StatusCodeServerErrorRequiredLockIsNotHeld = 2813
+	// StatusCodeServerErrorClassicTLFNotExists is the error code returned by a
+	// MD get operation to indicate that a classic TLF is not found, and client
+	// has specified not to create one. Normally upon this error, KBFS client
+	// should ask service to create an implicit team for the give handle, and
+	// use the i-team backed TLF.
+	StatusCodeServerErrorClassicTLFNotExists = 2814
 )
 
 // ServerError is a generic server-side error.
@@ -360,6 +366,23 @@ func (e ServerErrorRequiredLockIsNotHeld) ToStatus() (s keybase1.Status) {
 	return
 }
 
+// ServerErrorClassicTLFNotExists is the error type for
+// StatusCodeServerErrorClassicTLFNotExists.
+type ServerErrorClassicTLFNotExists struct{}
+
+// Error implements the Error interface.
+func (e ServerErrorClassicTLFNotExists) Error() string {
+	return "ServerErrorClassicTLFNotExists{}"
+}
+
+// ToStatus implements the ExportableError interface.
+func (e ServerErrorClassicTLFNotExists) ToStatus() (s keybase1.Status) {
+	s.Code = StatusCodeServerErrorClassicTLFNotExists
+	s.Name = "CLASSIC_TLF_NOT_EXISTS"
+	s.Desc = e.Error()
+	return
+}
+
 // ServerErrorUnwrapper is an implementation of rpc.ErrorUnwrapper
 // for errors coming from the MDServer.
 type ServerErrorUnwrapper struct{}
@@ -456,6 +479,9 @@ func (eu ServerErrorUnwrapper) UnwrapError(arg interface{}) (appError error, dis
 		break
 	case StatusCodeServerErrorRequiredLockIsNotHeld:
 		appError = ServerErrorRequiredLockIsNotHeld{}
+		break
+	case StatusCodeServerErrorClassicTLFNotExists:
+		appError = ServerErrorClassicTLFNotExists{}
 		break
 	default:
 		ase := libkb.AppStatusError{
